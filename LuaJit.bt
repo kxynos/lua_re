@@ -1,18 +1,19 @@
 //------------------------------------------------
 //--- 010 Editor v8.0 Binary Template
 //
-//      File: LuaJit.bt
-//   Authors: feicong
+//      File: LuaJIT.bt
+//   Authors: feicong, kxynos
 //    E-mail: 346345565@qq.com
 //       Url: https://github.com/feicong/lua_re
-//   Version: 1.1
+//   Version: 1.2
 //   Purpose: Parse luajit bytecode files, support luajit 2.0.5. 
 //  Category: Programming
 // File Mask: *
 //  ID Bytes: 1B 4C 4A
 //   History: 
-//      1.1   2017-12-11 feicong: Add disassembler engine: InstructionRead().
-//      1.0   2017-10-12 feicong: Initial version, support luajit 2.0.5.
+//   1.2   2021-07-12 kxynos: Corrected a typo in BigEndian. Added reporting of the FLAG_FR2 flag.
+//   1.1   2017-12-11 feicong: Add disassembler engine: InstructionRead().
+//   1.0   2017-10-12 feicong: Initial version, support luajit 2.0.5.
 //
 //   License: This file is released into the public domain. People may 
 //          use it for any purpose, commercial or otherwise. 
@@ -21,7 +22,8 @@
 typedef enum<uchar> {
     _FLAG_IS_BIG_ENDIAN = 0b00000001,
     _FLAG_IS_STRIPPED = 0b00000010,
-    _FLAG_HAS_FFI = 0b00000100
+    _FLAG_HAS_FFI = 0b00000100, 
+    _FLAG_FR2 = 0b00001000
 } FLAG;
 
 typedef enum<uchar> {
@@ -565,6 +567,9 @@ string GlobalHeaderFlagRead(GlobalHeaderFlags &flags) {
         str += "FLAG_IS_STRIPPED | ";
     if (has_ffi)
         str += "FLAG_HAS_FFI | ";
+    if (has_fr2)
+        str += "FLAG_FR2 | ";
+
 
     if (Strlen(str) > 3)
         str = SubStr(str, 0, Strlen(str) - 3);
@@ -809,12 +814,15 @@ local uchar is_stripped = bits & _FLAG_IS_STRIPPED;
 bits &= ~_FLAG_IS_STRIPPED;
 local uchar has_ffi = bits & _FLAG_HAS_FFI;
 bits &= ~_FLAG_HAS_FFI;
+local uchar has_fr2 = bits & _FLAG_FR2;
+bits &= ~_FLAG_FR2;
+
 
 if (bits != 0)
     Warning("Unknown header flags: {0x%x}", bits);
 
 if (is_big_endian) {
-    BitEndian();
+    BigEndian();
 } else {
     //Printf("LittleEndian.\n");
     LittleEndian();
